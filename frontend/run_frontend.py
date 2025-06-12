@@ -41,23 +41,38 @@ def setup_environment():
 def check_requirements():
     """Check if required packages are installed."""
     
-    required_packages = [
-        'streamlit',
-        'requests',
-        'pandas',
-        'plotly',
-        'opencv-python',
-        'pillow'
-    ]
-    
     missing_packages = []
+
+    try:
+        import streamlit
+    except ImportError:
+        missing_packages.append('streamlit')
     
-    for package in required_packages:
-        try:
-            __import__(package.replace('-', '_'))
-        except ImportError:
-            missing_packages.append(package)
+    try:
+        import requests
+    except ImportError:
+        missing_packages.append('requests')
     
+    try:
+        import pandas
+    except ImportError:
+        missing_packages.append('pandas')
+    
+    try:
+        import plotly
+    except ImportError:
+        missing_packages.append('plotly')
+    
+    try:
+        import cv2
+    except ImportError:
+        missing_packages.append('opencv-python')
+    
+    try:
+        from PIL import Image
+    except ImportError:
+        missing_packages.append('pillow')
+
     if missing_packages:
         print(f"❌ Missing required packages: {', '.join(missing_packages)}")
         print("Please install them using:")
@@ -66,7 +81,6 @@ def check_requirements():
     
     print("✅ All required packages are installed")
     return True
-
 
 def run_streamlit_app(frontend_dir: Path, port: int = 8501, debug: bool = False):
     """Run the Streamlit application."""

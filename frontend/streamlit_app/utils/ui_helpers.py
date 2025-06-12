@@ -5,7 +5,7 @@ from PIL import Image
 import plotly.express as px
 import plotly.graph_objects as go
 from typing import Dict, List, Any, Optional
-from ..config.settings import BRAND_COLORS, CHART_HEIGHT, CHART_WIDTH
+from config.settings import BRAND_COLORS, CHART_HEIGHT, CHART_WIDTH, PAGE_TITLE, PAGE_ICON, LAYOUT
 
 
 def display_video_info(video_info: Dict[str, Any]):
@@ -257,3 +257,71 @@ def create_sidebar_controls() -> Dict[str, Any]:
         'frame_skip': frame_skip,
         'save_annotated_video': save_annotated
     }
+
+# Add these functions to your ui_helpers.py file
+
+def setup_page_config():
+    """Setup Streamlit page configuration."""
+    st.set_page_config(
+        page_title=PAGE_TITLE,
+        page_icon=PAGE_ICON,
+        layout=LAYOUT,
+        initial_sidebar_state="expanded",
+        menu_items={
+            'Get Help': None,
+            'Report a bug': None,
+            'About': f"# {PAGE_TITLE}\n\nBike Detection System using YOLOv8"
+        }
+    )
+
+
+def render_sidebar():
+    """Render the application sidebar with navigation and controls."""
+    
+    with st.sidebar:
+        # App logo/title
+        st.markdown(
+            """
+            <div style='text-align: center; padding: 20px 0;'>
+                <h1 style='color: #1f77b4; margin: 0;'>🚴</h1>
+                <h3 style='color: #333; margin: 5px 0;'>Bike Detector</h3>
+                <p style='color: #666; font-size: 12px; margin: 0;'>YOLOv8 Detection System</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        st.divider()
+        
+        # Navigation info
+        st.markdown("### 🧭 Navigation")
+        st.markdown("""
+        - **📹 Upload**: Upload videos for analysis
+        - **⚡ Real-time**: Live detection from camera
+        - **🔄 Batch**: Process multiple files
+        - **📊 Statistics**: View analytics
+        """)
+        
+        st.divider()
+        
+        # Detection settings (reuse existing function)
+        detection_settings = create_sidebar_controls()
+        
+        st.divider()
+        
+        # System info
+        st.markdown("### ℹ️ System Info")
+        
+        # Memory usage (if available)
+        try:
+            import psutil
+            memory = psutil.virtual_memory()
+            st.metric("Memory Usage", f"{memory.percent:.1f}%")
+        except ImportError:
+            st.info("Install psutil for memory monitoring")
+        
+        # App version
+        st.text("Version: 1.0.0")
+        st.text("Model: YOLOv8")
+        
+        return detection_settings

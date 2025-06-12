@@ -1,9 +1,9 @@
 import streamlit as st
 import time
 from typing import Dict, Any, List
-from ..utils.api_client import APIClient
-from ..utils.ui_helpers import show_error_message, show_success_message, show_info_message
-from ..config.settings import SESSION_KEYS
+from utils.api_client import APIClient
+from utils.ui_helpers import show_error_message, show_success_message, show_info_message
+from config.settings import SESSION_KEYS
 from .video_upload import get_current_file_id, get_current_video_info, has_uploaded_video
 
 def render_batch_processing_component():

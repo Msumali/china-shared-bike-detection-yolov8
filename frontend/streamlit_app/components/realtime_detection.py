@@ -4,15 +4,15 @@ import numpy as np
 from typing import Dict, Any, Optional
 import time
 import json
-from ..utils.api_client import APIClient
-from ..utils.ui_helpers import (
+from utils.api_client import APIClient
+from utils.ui_helpers import (
     display_detection_results, 
     display_frame_with_detections,
     show_error_message,
     show_info_message,
     create_sidebar_controls
 )
-from ..config.settings import SESSION_KEYS
+from config.settings import SESSION_KEYS
 from .video_upload import get_current_file_id, get_current_video_info, has_uploaded_video
 
 

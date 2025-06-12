@@ -520,6 +520,7 @@ def generate_mock_statistics(start_time: datetime, end_time: datetime) -> Dict[s
         "processing_success_rate": np.random.uniform(95, 99),
         "time_series": time_series,
         "confidence_distribution": [np.random.uniform(0.5, 1.0) for _ in range(100)],
+        "brands": brands_data,
         "performance_metrics": {
             "avg_frame_time": np.random.uniform(0.05, 0.2),
             "fps": np.random.uniform(15, 30),

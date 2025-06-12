@@ -41,10 +41,10 @@ async def root():
         "docs": "/api/docs"
     }
 
-# @app.get("/health")
-# async def health_check():
-#     """Health check endpoint."""
-#     return {"status": "healthy"}
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "healthy"}
 
 if __name__ == "__main__":
     uvicorn.run(

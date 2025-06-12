@@ -4,9 +4,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
-from ..utils.api_client import APIClient
-from ..utils.ui_helpers import show_error_message, show_success_message, show_info_message
-from ..config.settings import SESSION_KEYS
+from utils.api_client import APIClient
+from utils.ui_helpers import show_error_message, show_success_message, show_info_message
+from config.settings import SESSION_KEYS
 
 def render_statistics_component():
     """Render statistics and analytics component."""

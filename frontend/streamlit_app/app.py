@@ -12,6 +12,7 @@ from components.video_upload import render_video_upload_component
 from components.realtime_detection import render_realtime_detection_component
 from components.batch_processing import render_batch_processing_component
 from components.statistics import render_statistics_component, render_system_health
+# from components.statistics import render_statistics_component
 from config.settings import APP_CONFIG, SESSION_KEYS
 from utils.ui_helpers import setup_page_config, render_sidebar
 
@@ -38,7 +39,7 @@ def initialize_session_state():
     """Initialize session state variables."""
     
     # Initialize all session keys if they don't exist
-    for key in SESSION_KEYS.__dict__.values():
+    for key in SESSION_KEYS.values():
         if isinstance(key, str) and key not in st.session_state:
             st.session_state[key] = None
     
@@ -81,8 +82,8 @@ def render_main_content():
         render_statistics_component()
         
         # Add system health section
-        st.divider()
-        render_system_health()
+        # st.divider()
+        # render_system_health()
 
 
 def render_connection_status():
@@ -118,16 +119,26 @@ def test_api_connection():
         api_client = APIClient()
         response = api_client.health_check()
         
+        # Check if the response indicates healthy status
         if response.get('status') == 'healthy':
             st.session_state.api_connected = True
             st.success("Successfully connected to backend!")
         else:
             st.session_state.api_connected = False
-            st.error("Backend is not healthy")
+            error_msg = response.get('error', 'Backend is not healthy')
+            st.error(f"Backend connection failed: {error_msg}")
             
     except Exception as e:
         st.session_state.api_connected = False
         st.error(f"Failed to connect to backend: {str(e)}")
+        
+        # Additional debugging info
+        with st.expander("Debug Information"):
+            st.write("**Error Details:**")
+            st.code(str(e))
+            st.write("**Backend URL:**")
+            from config.settings import API_BASE_URL
+            st.code(API_BASE_URL)
 
 
 def render_footer():

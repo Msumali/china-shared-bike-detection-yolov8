@@ -2,11 +2,209 @@ import streamlit as st
 import time
 import pandas as pd
 import json
-from typing import Dict, Any, List
-from ..utils.api_client import APIClient
-from ..utils.ui_helpers import show_error_message, show_success_message, show_info_message
-from ..config.settings import SESSION_KEYS
-from .video_upload import get_current_file_id, get_current_video_info, has_uploaded_video
+from typing import Dict, Any, List, Optional
+from utils.api_client import APIClient
+from utils.ui_helpers import show_error_message, show_success_message, show_info_message
+from config.settings import SESSION_KEYS
+# from components.video_upload import get_current_file_id, get_current_video_info, has_uploaded_video
+
+def has_uploaded_video() -> bool:
+    """Check if a video has been uploaded."""
+    return (
+        SESSION_KEYS['file_id'] in st.session_state and 
+        st.session_state[SESSION_KEYS['file_id']] is not None and
+        SESSION_KEYS['video_info'] in st.session_state and
+        st.session_state[SESSION_KEYS['video_info']] is not None
+    )
+
+def get_current_file_id() -> Optional[str]:
+    """Get the current uploaded video file ID."""
+    return st.session_state.get(SESSION_KEYS['file_id'])
+
+def get_current_video_info() -> Optional[Dict[str, Any]]:
+    """Get the current uploaded video information."""
+    return st.session_state.get(SESSION_KEYS['video_info'])
+
+def render_file_info(uploaded_file):
+    """Display information about the uploaded file."""
+    if uploaded_file is not None:
+        st.info(f"**File:** {uploaded_file.name}")
+        st.info(f"**Size:** {uploaded_file.size / (1024*1024):.2f} MB")
+        st.info(f"**Type:** {uploaded_file.type}")
+
+def upload_video(uploaded_file):
+    """Upload video file and store information in session state."""
+    try:
+        from utils.api_client import APIClient
+        from utils.ui_helpers import show_error_message, show_success_message
+        
+        # Create progress bar
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        status_text.text("Uploading video...")
+        progress_bar.progress(25)
+        
+        # Read file content
+        file_content = uploaded_file.read()
+        
+        progress_bar.progress(50)
+        status_text.text("Processing video...")
+        
+        # Upload via API
+        api_client = APIClient()
+        response = api_client.upload_video(file_content, uploaded_file.name)
+        
+        progress_bar.progress(75)
+        
+        if response.get("success"):
+            file_id = response.get("file_id")
+            video_info = response.get("video_info", {})
+            
+            # Store in session state
+            st.session_state[SESSION_KEYS['uploaded_file']] = uploaded_file.name
+            st.session_state[SESSION_KEYS['file_id']] = file_id
+            st.session_state[SESSION_KEYS['video_info']] = video_info
+            
+            progress_bar.progress(100)
+            status_text.text("Upload completed!")
+            
+            show_success_message(f"Video uploaded successfully! File ID: {file_id}")
+            
+            # Display video info
+            render_current_video_info()
+            
+        else:
+            error_msg = response.get("error", "Upload failed")
+            show_error_message(f"Upload failed: {error_msg}")
+            
+    except Exception as e:
+        show_error_message(f"Error uploading video: {str(e)}")
+    finally:
+        if 'progress_bar' in locals():
+            progress_bar.empty()
+        if 'status_text' in locals():
+            status_text.empty()
+
+def preview_video(uploaded_file):
+    """Preview the uploaded video file."""
+    try:
+        # Display video player
+        st.video(uploaded_file)
+        
+        # Show file details
+        st.write("**File Details:**")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write(f"Name: {uploaded_file.name}")
+            st.write(f"Size: {uploaded_file.size / (1024*1024):.2f} MB")
+        
+        with col2:
+            st.write(f"Type: {uploaded_file.type}")
+            
+    except Exception as e:
+        from utils.ui_helpers import show_error_message
+        show_error_message(f"Error previewing video: {str(e)}")
+
+def render_current_video_info():
+    """Display current uploaded video information."""
+    if not has_uploaded_video():
+        return
+    
+    video_info = get_current_video_info()
+    file_id = get_current_file_id()
+    
+    st.subheader("📹 Current Video Information")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("File ID", file_id[:8] + "..." if len(file_id) > 8 else file_id)
+    
+    with col2:
+        st.metric("Duration", f"{video_info.get('duration', 0):.2f}s")
+    
+    with col3:
+        st.metric("Frames", video_info.get('frame_count', 0))
+    
+    with col4:
+        st.metric("FPS", f"{video_info.get('fps', 0):.2f}")
+    
+    # Additional info in expandable section
+    with st.expander("📊 Detailed Information", expanded=False):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write(f"**Width:** {video_info.get('width', 0)}px")
+            st.write(f"**Height:** {video_info.get('height', 0)}px")
+            st.write(f"**Codec:** {video_info.get('codec', 'Unknown')}")
+        
+        with col2:
+            st.write(f"**Bitrate:** {video_info.get('bitrate', 0)} kbps")
+            st.write(f"**File Size:** {video_info.get('file_size', 0) / (1024*1024):.2f} MB")
+            st.write(f"**Format:** {video_info.get('format', 'Unknown')}")
+    
+    # Clear video button
+    if st.button("🗑️ Clear Video"):
+        clear_uploaded_video()
+        st.rerun()
+
+def clear_uploaded_video():
+    """Clear the uploaded video from session state."""
+    keys_to_clear = [
+        SESSION_KEYS['uploaded_file'],
+        SESSION_KEYS['file_id'], 
+        SESSION_KEYS['video_info'],
+        SESSION_KEYS['detection_results'],
+        SESSION_KEYS['current_frame']
+    ]
+    
+    for key in keys_to_clear:
+        if key in st.session_state:
+            del st.session_state[key]
+    
+    from utils.ui_helpers import show_success_message
+    show_success_message("Video cleared successfully!")
+
+def get_upload_progress():
+    """Get upload progress if available."""
+    return st.session_state.get('upload_progress', 0)
+
+def set_upload_progress(progress: int):
+    """Set upload progress."""
+    st.session_state['upload_progress'] = progress
+
+def render_video_upload_component():
+    """Render video upload component."""
+    
+    st.header("📹 Video Upload")
+    
+    # File upload section
+    uploaded_file = st.file_uploader(
+        "Choose a video file",
+        type=['mp4', 'avi', 'mov', 'mkv', 'wmv'],
+        help="Upload a video file for bike detection analysis"
+    )
+    
+    if uploaded_file is not None:
+        # Display file info
+        render_file_info(uploaded_file)
+        
+        # Upload button
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            if st.button("🚀 Upload and Process", type="primary", use_container_width=True):
+                upload_video(uploaded_file)
+        
+        with col2:
+            if st.button("📋 Preview"):
+                preview_video(uploaded_file)
+    
+    # Display current uploaded video info if available
+    if has_uploaded_video():
+        render_current_video_info()
 
 def render_batch_processing_component():
     """Render batch processing component."""
