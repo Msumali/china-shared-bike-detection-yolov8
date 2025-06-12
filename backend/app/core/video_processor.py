@@ -3,11 +3,13 @@ import os
 import tempfile
 import numpy as np
 from .detector import BikeDetector
-from .config import OUTPUTS_DIR, UPLOADS_DIR
+# from .config import OUTPUTS_DIR, UPLOADS_DIR
+from .config import settings
 from typing import Generator, Tuple, Dict, List, Optional, Callable
 import time
 
-
+UPLOADS_DIR = settings.upload_dir
+OUTPUTS_DIR = settings.output_dir
 class VideoProcessor:
     def __init__(self):
         """Initialize the video processor with bike detector."""

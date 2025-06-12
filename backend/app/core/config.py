@@ -1,54 +1,36 @@
+# backend/app/core/config.py
+
 import os
-from typing import List
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    # Server settings
-    HOST: str = "0.0.0.0"
-    PORT: int = 8000
-    DEBUG: bool = True
-    
-    # CORS settings
-    ALLOWED_ORIGINS: List[str] = [
-        "http://localhost:8501",  # Streamlit default
-        "http://localhost:3000",  # React default
-        "http://127.0.0.1:8501",
-        "http://127.0.0.1:3000"
-    ]
-    
-    # Project paths
-    PROJECT_ROOT: str = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    MODEL_PATH: str = os.path.join(PROJECT_ROOT, "models", "best.pt")
-    UPLOADS_DIR: str = os.path.join(PROJECT_ROOT, "uploads")
-    OUTPUTS_DIR: str = os.path.join(PROJECT_ROOT, "outputs")
-    
-    # Detection settings
-    CONFIDENCE_THRESHOLD: float = 0.5
-    IOU_THRESHOLD: float = 0.45
-    
-    # File upload settings
-    MAX_FILE_SIZE: int = 100 * 1024 * 1024  # 100MB
-    ALLOWED_EXTENSIONS: List[str] = [".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv"]
-    
-    # Bike detection classes
-    BIKE_CLASSES: dict = {
-        0: {"name": "Didi", "color": [255, 165, 0]},      # Orange
-        1: {"name": "Meituan", "color": [255, 255, 0]},   # Yellow
-        2: {"name": "HelloRide", "color": [0, 255, 0]}    # Green
-    }
-    
-    # Video processing settings
-    MAX_FRAME_SKIP: int = 10
-    DEFAULT_FRAME_SKIP: int = 1
-    
+    # App settings
+    app_name: str = "Bike Detection API"
+    debug: bool = True
+    host: str = "127.0.0.1" 
+    port: int = 8000         
+
+    # Model settings
+    model_path: str = "models/best.pt"
+    confidence_threshold: float = 0.5
+    iou_threshold: float = 0.45
+
+    # Directory settings
+    upload_dir: str = "uploads"
+    output_dir: str = "outputs"
+
+    # API settings
+    max_file_size: int = 100 * 1024 * 1024  # 100MB
+    allowed_extensions: list = [".jpg", ".jpeg", ".png", ".mp4", ".avi", ".mov"]
+
+    # I have added this for development purpose only
+    allowed_origins: list[str] = ["*"]  # or specific domains for CORS
+
     class Config:
         env_file = ".env"
-        case_sensitive = True
 
-# Create settings instance
+# Instantiate config
 settings = Settings()
 
-# Create directories if they don't exist
-os.makedirs(settings.UPLOADS_DIR, exist_ok=True)
-os.makedirs(settings.OUTPUTS_DIR, exist_ok=True)
-os.makedirs(os.path.dirname(settings.MODEL_PATH), exist_ok=True)
+UPLOADS_DIR = settings.upload_dir
+OUTPUTS_DIR = settings.output_dir

@@ -349,9 +349,3 @@ def handle_api_error(response: Dict[str, Any], default_message: str = "API reque
         return "You don't have permission to access this resource."
     else:
         return error
-
-
-
-        git remote add origin https://github.com/Msumali/china-shared-bike-detection-yolov8
-
-touch .gitignore

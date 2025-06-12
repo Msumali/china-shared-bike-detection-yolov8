@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from typing import Optional, Tuple
 from fastapi import UploadFile
-from ..core.config import UPLOADS_DIR, OUTPUTS_DIR, ALLOWED_VIDEO_EXTENSIONS
+from ..core.config import settings, UPLOADS_DIR, OUTPUTS_DIR
 
 
 class FileHandler:
@@ -34,7 +34,7 @@ class FileHandler:
         file_extension = Path(file.filename).suffix.lower()
         
         # Validate file extension
-        if file_extension not in ALLOWED_VIDEO_EXTENSIONS:
+        if file_extension not in settings.allowed_extensions:
             raise ValueError(f"Unsupported file type: {file_extension}")
         
         # Create file path
@@ -63,7 +63,7 @@ class FileHandler:
         Returns:
             str: File path or None if not found
         """
-        for extension in ALLOWED_VIDEO_EXTENSIONS:
+        for extension in settings.allowed_extensions:
             file_path = self.uploads_dir / f"{file_id}{extension}"
             if file_path.exists():
                 return str(file_path)

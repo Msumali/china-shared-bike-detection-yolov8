@@ -39,6 +39,14 @@ class BatchProcessRequest(BaseModel):
     frame_skip: int = 1
     confidence_threshold: Optional[float] = None
     iou_threshold: Optional[float] = None
+    # added to schema
+    file_id: str
+    processing_mode: str
+    output_format: str
+    frame_interval: Optional[int] = None
+    time_interval: Optional[float] = None
+    start_frame: Optional[int] = None
+    end_frame: Optional[int] = None
 
 
 class ProcessingStatus(BaseModel):
@@ -62,6 +70,12 @@ class DetectionStatistics(BaseModel):
     bbox_stats: Dict[str, float]
     frames_processed: int
     processing_time: float
+
+
+class StatisticsResponse(BaseModel):
+    """Response model for statistics endpoint."""
+    success: bool
+    data: DetectionStatistics
 
 
 class BatchProcessResponse(BaseModel):

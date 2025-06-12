@@ -20,26 +20,26 @@ def main():
     settings = Settings()
     
     # Create necessary directories
-    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    os.makedirs(settings.OUTPUT_DIR, exist_ok=True)
+    os.makedirs(settings.upload_dir, exist_ok=True)
+    os.makedirs(settings.output_dir, exist_ok=True)
     
     # Check if model file exists
-    if not os.path.exists(settings.MODEL_PATH):
-        print(f"Warning: Model file not found at {settings.MODEL_PATH}")
+    if not os.path.exists(settings.model_path):
+        print(f"Warning: Model file not found at {settings.model_path}")
         print("Please ensure your trained YOLOv8 model is placed in the models/ directory")
     
-    print(f"Starting server on {settings.HOST}:{settings.PORT}")
-    print(f"Model path: {settings.MODEL_PATH}")
-    print(f"Upload directory: {settings.UPLOAD_DIR}")
-    print(f"Output directory: {settings.OUTPUT_DIR}")
+    print(f"Starting server on {settings.host}:{settings.port}")
+    print(f"Model path: {settings.model_path}")
+    print(f"Upload directory: {settings.upload_dir}")
+    print(f"Output directory: {settings.output_dir}")
     
     uvicorn.run(
         "app.main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=settings.DEBUG,
+        host=settings.host,
+        port=settings.port,
+        reload=settings.debug,
         access_log=True,
-        log_level="info" if not settings.DEBUG else "debug"
+        log_level="info" if not settings.debug else "debug"
     )
 
 if __name__ == "__main__":

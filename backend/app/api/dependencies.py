@@ -2,7 +2,22 @@ from typing import Generator, Optional
 from fastapi import Depends, HTTPException, status
 from ..core.detector import BikeDetector
 from ..core.config import Settings
+from ..core.video_processor import VideoProcessor
+from ..utils.file_handler import FileHandler
 import os
+
+
+video_processor_instance: Optional[VideoProcessor] = None
+
+def get_video_processor() -> VideoProcessor:
+    """Get video processor instance (singleton)."""
+    global video_processor_instance
+
+    if video_processor_instance is None:
+        video_processor_instance = VideoProcessor()
+
+    return video_processor_instance
+
 
 # Global detector instance
 detector_instance: Optional[BikeDetector] = None
@@ -86,3 +101,14 @@ def cleanup_temp_files(file_paths: list[str]) -> None:
         except Exception:
             # Ignore cleanup errors
             pass
+
+file_handler_instance: Optional[FileHandler] = None
+
+def get_file_handler() -> FileHandler:
+    """Get file handler instance (singleton)."""
+    global file_handler_instance
+
+    if file_handler_instance is None:
+        file_handler_instance = FileHandler()
+
+    return file_handler_instance
