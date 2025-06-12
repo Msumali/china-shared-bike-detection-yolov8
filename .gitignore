@@ -1,0 +1,49 @@
+# === Python-related ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pkl
+*.sqlite3
+
+# === Virtual Environments ===
+env/
+venv/
+ENV/
+.venv/
+pip-log.txt
+
+# === Jupyter and IPython ===
+.ipynb_checkpoints/
+*.ipynb
+
+# === Streamlit ===
+.streamlit/
+
+# === VS Code / IDEs ===
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# === System Files ===
+.DS_Store
+Thumbs.db
+
+# === Project-Specific ===
+uploads/
+outputs/
+logs/
+*.log
+
+# === Compiled / Dist Files ===
+build/
+dist/
+*.egg-info/
+
+# === Environment / Secrets (optional, if used) ===
+.env
+.env.*
+
+# === Docker (if added later) ===
+docker-compose.override.yml
