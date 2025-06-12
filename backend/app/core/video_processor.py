@@ -5,7 +5,7 @@ import numpy as np
 from .detector import BikeDetector
 # from .config import OUTPUTS_DIR, UPLOADS_DIR
 from .config import settings
-from typing import Generator, Tuple, Dict, List, Optional, Callable
+from typing import Generator, Tuple, Dict, List, Optional, Callable, Any
 import time
 
 UPLOADS_DIR = settings.upload_dir
@@ -47,6 +47,53 @@ class VideoProcessor:
             }
         finally:
             cap.release()
+
+    
+    def process_with_yolo(self, video_path: str) -> Dict[str, Any]:
+        """
+        Process video with YOLO and return detection results for statistics.
+        
+        Args:
+            video_path: Path to the video file
+            
+        Returns:
+            Dict containing detections and metadata
+        """
+        # Use your existing batch processing function
+        output_path, stats = self.process_video_batch(
+            video_path=video_path,
+            save_annotated=False,  # Don't save video, just get detections
+            frame_skip=1  # Process every frame for accuracy
+        )
+        
+        # Convert your existing stats format to the format needed for statistics_cache
+        detections = []
+        
+        # Create individual detection records from your stats
+        brands = stats.get('brands', {})
+        total_detections = stats.get('total_detections', 0)
+        avg_confidence = stats.get('confidence_stats', {}).get('average', 0)
+        
+        # Since your current stats don't store individual detections,
+        # we'll create detection records based on brand counts
+        detection_id = 0
+        for brand, count in brands.items():
+            for i in range(count):
+                detections.append({
+                    'detection_id': detection_id,
+                    'confidence': avg_confidence,  # Use average confidence
+                    'class': brand,  # Brand name (Didi, Meituan, HelloRide)
+                    'bbox': [0, 0, 0, 0]  # Placeholder - your current code doesn't store individual bboxes
+                })
+                detection_id += 1
+        
+        return {
+            'detections': detections,
+            'total_frames': stats.get('frames_processed', 0),
+            'processing_time': stats.get('processing_time', 0),
+            'brands': brands
+        }
+
     
     def process_video_realtime(self, video_path: str, progress_callback: Optional[Callable] = None, 
                               frame_skip: int = 1) -> Generator[Tuple[int, np.ndarray, List[Dict], float], None, None]:

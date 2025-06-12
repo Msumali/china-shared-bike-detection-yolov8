@@ -13,12 +13,12 @@ class BikeDetector:
     
     def __init__(self, model_path: str = None):
         """Initialize the bike detector with the trained YOLO model."""
-        self.model_path = model_path or settings.MODEL_PATH
+        self.model_path = model_path or settings.model_path
         self.model = None
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.confidence_threshold = settings.CONFIDENCE_THRESHOLD
-        self.iou_threshold = settings.IOU_THRESHOLD
-        self.bike_classes = settings.BIKE_CLASSES
+        self.confidence_threshold = settings.confidence_threshold
+        self.iou_threshold = settings.iou_threshold
+        self.bike_classes = settings.bike_classes
         self.load_model()
     
     def load_model(self):

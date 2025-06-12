@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends, Query
 from fastapi.responses import JSONResponse, FileResponse
 from typing import Dict, Any, List, Optional
 import os
@@ -27,7 +27,11 @@ from ..models.schemas import (
 from ..utils.file_handler import FileHandler
 from .dependencies import get_detector, get_video_processor, get_file_handler
 from .dependencies import get_settings
+import logging
 
+# Configure logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 settings = get_settings()
@@ -42,44 +46,47 @@ async def upload_video(
     file: UploadFile = File(...),
     file_handler: FileHandler = Depends(get_file_handler)
 ):
-    """Upload a video file for processing."""
+    """Upload and process a video file with YOLO."""
     try:
         # Validate file type
         if not file.filename.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
             raise HTTPException(status_code=400, detail="Invalid file type. Only video files are allowed.")
         
-        # Generate unique file ID
-        file_id = str(uuid.uuid4())
-        
-        # Save uploaded file
-        file_path = await file_handler.save_upload(file, file_id)
+        # Save uploaded file using your existing method
+        file_id, file_path = file_handler.save_uploaded_file(file)
         
         # Get video information
         video_processor = VideoProcessor()
         video_info = video_processor.get_video_info(file_path)
         
-        # Store file information
-        file_info = {
-            "file_id": file_id,
-            "filename": file.filename,
-            "file_path": file_path,
-            "upload_time": datetime.now().isoformat(),
-            "video_info": video_info
-        }
+        # YOLO processing
+        start_time = datetime.now()
+        yolo_results = video_processor.process_with_yolo(file_path)
+        processing_time = (datetime.now() - start_time).total_seconds()
         
-        # Cache file info (in production, store in database)
-        statistics_cache[f"file_{file_id}"] = file_info
+        # Store in statistics cache
+        statistics_cache[file_id] = {
+            'filename': file.filename,
+            'upload_time': datetime.now().isoformat(),
+            'processing_time': processing_time,
+            'fps': video_info.get('fps', 0),
+            'detections': yolo_results.get('detections', [])
+        }
         
         return {
             "success": True,
             "file_id": file_id,
             "filename": file.filename,
             "video_info": video_info,
-            "message": "Video uploaded successfully"
+            "processing_time": processing_time,
+            "detections_count": len(yolo_results.get('detections', [])),
+            "message": "Video uploaded and processed successfully"
         }
         
     except Exception as e:
+        logger.error(f"Upload failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
 
 
 @router.get("/video-info/{file_id}", response_model=VideoInfoResponse)
@@ -232,35 +239,36 @@ async def get_batch_status(task_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/statistics/", response_model=StatisticsResponse)
+@router.get("/statistics/")
 async def get_statistics(
-    start_time: Optional[str] = None,
-    end_time: Optional[str] = None
+    start_time: datetime = Query(..., description="Start time for statistics"),
+    end_time: datetime = Query(..., description="End time for statistics")
 ):
-    """Get detection statistics for the specified time range."""
+    """Get statistics from YOLO video processing."""
     try:
-        # Parse time range
-        if start_time:
-            start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
-        else:
-            start_dt = datetime.now() - timedelta(days=7)
-            
-        if end_time:
-            end_dt = datetime.fromisoformat(end_time.replace('Z', '+00:00'))
-        else:
-            end_dt = datetime.now()
-        
-        # Generate mock statistics (replace with real data from database)
-        stats = generate_mock_statistics(start_dt, end_dt)
-        
-        return {
-            "success": True,
-            "data": stats
-        }
-        
+        stats = generate_real_statistics(start_time, end_time)
+        return stats
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get statistics: {str(e)}")
+        logger.error(f"Error generating statistics: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating statistics: {str(e)}")
 
+
+# Make sure your upload endpoint stores YOLO results like this:
+"""
+statistics_cache[video_id] = {
+    'filename': filename,
+    'upload_time': datetime.now().isoformat(),
+    'processing_time': processing_time_seconds,
+    'fps': video_fps,
+    'detections': [
+        {
+            'confidence': 0.85,
+            'class': 'motorcycle',  # YOLO class name
+            'bbox': [x, y, w, h]    # bounding box coordinates
+        }
+    ]
+}
+"""
 
 # @router.get("/system-health/", response_model=SystemHealthResponse)
 # async def get_system_health():
@@ -485,63 +493,158 @@ async def process_video_batch(
         })
 
 
-def generate_mock_statistics(start_time: datetime, end_time: datetime) -> Dict[str, Any]:
-    """Generate mock statistics data."""
+def generate_real_statistics(start_time: datetime, end_time: datetime) -> Dict[str, Any]:
+    """Generate real statistics from actual YOLO video processing data."""
     
-    # Generate time series data
+    # Filter statistics_cache for the time range
+    filtered_data = []
+    for video_data in statistics_cache.values():
+        upload_time = datetime.fromisoformat(video_data.get('upload_time', ''))
+        if start_time <= upload_time <= end_time:
+            filtered_data.append(video_data)
+    
+    if not filtered_data:
+        # Return empty statistics if no data in range
+        return {
+            "total_detections": 0,
+            "total_videos_processed": 0,
+            "average_confidence": 0,
+            "total_processing_time": 0,
+            "detections_change": 0,
+            "videos_change": 0,
+            "confidence_change": 0,
+            "processing_time_change": 0,
+            "unique_bikes_detected": 0,
+            "average_fps": 0,
+            "detection_accuracy": 0,
+            "processing_success_rate": 100.0,
+            "time_series": [],
+            "confidence_distribution": [],
+            "brands": {},
+            "performance_metrics": {
+                "avg_frame_time": 0,
+                "fps": 0,
+                "memory_usage": 0,
+                "cpu_usage": 0,
+                "gpu_usage": 0
+            },
+            "quality_metrics": {
+                "high_confidence": 0,
+                "medium_confidence": 0,
+                "low_confidence": 0,
+                "false_positives": 0,
+                "missed_detections": 0
+            },
+            "top_videos": []
+        }
+    
+    # Calculate from real YOLO detection data
+    total_detections = sum(len(data.get('detections', [])) for data in filtered_data)
+    total_videos = len(filtered_data)
+    
+    # Get all confidence scores from YOLO detections
+    all_confidences = []
+    for data in filtered_data:
+        detections = data.get('detections', [])
+        for detection in detections:
+            if 'confidence' in detection:
+                all_confidences.append(detection['confidence'])
+    
+    avg_confidence = sum(all_confidences) / len(all_confidences) if all_confidences else 0
+    total_processing_time = sum(data.get('processing_time', 0) for data in filtered_data)
+    
+    # Generate time series from actual processing
     time_series = []
     current_time = start_time
     
     while current_time <= end_time:
+        hour_detections = 0
+        hour_confidences = []
+        
+        for data in filtered_data:
+            upload_time = datetime.fromisoformat(data.get('upload_time', ''))
+            if (upload_time.replace(minute=0, second=0, microsecond=0) == 
+                current_time.replace(minute=0, second=0, microsecond=0)):
+                
+                detections = data.get('detections', [])
+                hour_detections += len(detections)
+                
+                for detection in detections:
+                    if 'confidence' in detection:
+                        hour_confidences.append(detection['confidence'])
+        
+        hour_avg_confidence = sum(hour_confidences) / len(hour_confidences) if hour_confidences else 0
+        
         time_series.append({
             "timestamp": current_time.isoformat(),
-            "detections": np.random.randint(0, 50),
-            "confidence": np.random.uniform(0.5, 0.95),
+            "detections": hour_detections,
+            "confidence": hour_avg_confidence,
             "hour": current_time.hour
         })
         current_time += timedelta(hours=1)
     
-    # Calculate aggregate statistics
-    total_detections = sum(item["detections"] for item in time_series)
-    avg_confidence = sum(item["confidence"] for item in time_series) / len(time_series) if time_series else 0
+    # Count detections by class/brand from YOLO
+    brand_counts = {}
+    for data in filtered_data:
+        detections = data.get('detections', [])
+        for detection in detections:
+            brand = detection.get('class', 'motorcycle')  # YOLO class name
+            brand_counts[brand] = brand_counts.get(brand, 0) + 1
+    
+    # Quality metrics based on confidence thresholds
+    high_confidence = sum(1 for conf in all_confidences if conf >= 0.7)
+    medium_confidence = sum(1 for conf in all_confidences if 0.4 <= conf < 0.7)
+    low_confidence = sum(1 for conf in all_confidences if conf < 0.4)
+    
+    # FPS from video processing
+    fps_values = [data.get('fps', 0) for data in filtered_data if data.get('fps', 0) > 0]
+    avg_fps = sum(fps_values) / len(fps_values) if fps_values else 0
+    
+    # Top videos by detection count
+    top_videos = sorted(
+        [
+            {
+                "filename": data.get('filename', 'Unknown'),
+                "detections": len(data.get('detections', [])),
+                "avg_confidence": sum(d.get('confidence', 0) for d in data.get('detections', [])) / 
+                                len(data.get('detections', [])) if data.get('detections') else 0,
+                "processing_time": data.get('processing_time', 0)
+            }
+            for data in filtered_data
+        ],
+        key=lambda x: x['detections'],
+        reverse=True
+    )[:5]
     
     return {
         "total_detections": total_detections,
-        "total_videos_processed": len(statistics_cache),
+        "total_videos_processed": total_videos,
         "average_confidence": avg_confidence,
-        "total_processing_time": np.random.uniform(10, 100),
-        "detections_change": np.random.randint(-10, 20),
-        "videos_change": np.random.randint(0, 5),
-        "confidence_change": np.random.uniform(-0.1, 0.1),
-        "processing_time_change": np.random.uniform(-5, 5),
-        "unique_bikes_detected": np.random.randint(50, 200),
-        "average_fps": np.random.uniform(15, 30),
-        "detection_accuracy": np.random.uniform(85, 95),
-        "processing_success_rate": np.random.uniform(95, 99),
+        "total_processing_time": total_processing_time,
+        "detections_change": 0,
+        "videos_change": 0,
+        "confidence_change": 0,
+        "processing_time_change": 0,
+        "unique_bikes_detected": total_detections,  # Each detection is unique
+        "average_fps": avg_fps,
+        "detection_accuracy": avg_confidence * 100,
+        "processing_success_rate": 100.0,
         "time_series": time_series,
-        "confidence_distribution": [np.random.uniform(0.5, 1.0) for _ in range(100)],
-        "brands": brands_data,
+        "confidence_distribution": all_confidences,
+        "brands": brand_counts,
         "performance_metrics": {
-            "avg_frame_time": np.random.uniform(0.05, 0.2),
-            "fps": np.random.uniform(15, 30),
-            "memory_usage": np.random.uniform(500, 2000),
-            "cpu_usage": np.random.uniform(20, 80),
-            "gpu_usage": np.random.uniform(30, 90)
+            "avg_frame_time": total_processing_time / total_videos if total_videos > 0 else 0,
+            "fps": avg_fps,
+            "memory_usage": 0,
+            "cpu_usage": 0,
+            "gpu_usage": 0
         },
         "quality_metrics": {
-            "high_confidence": np.random.randint(50, 150),
-            "medium_confidence": np.random.randint(20, 80),
-            "low_confidence": np.random.randint(5, 30),
-            "false_positives": np.random.randint(0, 10),
-            "missed_detections": np.random.randint(0, 15)
+            "high_confidence": high_confidence,
+            "medium_confidence": medium_confidence,
+            "low_confidence": low_confidence,
+            "false_positives": 0,
+            "missed_detections": 0
         },
-        "top_videos": [
-            {
-                "filename": f"video_{i}.mp4",
-                "detections": np.random.randint(10, 100),
-                "avg_confidence": np.random.uniform(0.6, 0.9),
-                "processing_time": np.random.uniform(5, 30)
-            }
-            for i in range(5)
-        ]
+        "top_videos": top_videos
     }

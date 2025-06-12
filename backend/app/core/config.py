@@ -15,6 +15,14 @@ class Settings(BaseSettings):
     confidence_threshold: float = 0.5
     iou_threshold: float = 0.45
 
+    # Bike classes mapping - adjust based on your trained model
+    bike_classes: dict = {
+        0: {"name": "Didi", "color": [0, 255, 0]},      # Orange
+        1: {"name": "HelloRide", "color": [0, 0, 255]},   # Green
+        2: {"name": "Meituan", "color": [255, 255, 0]},   # Yellow 
+        
+    }
+
     # Directory settings
     upload_dir: str = "uploads"
     output_dir: str = "outputs"

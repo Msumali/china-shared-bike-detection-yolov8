@@ -33,18 +33,18 @@ def get_detector() -> BikeDetector:
     if detector_instance is None:
         settings = get_settings()
         
-        # Check if model file exists
-        if not os.path.exists(settings.MODEL_PATH):
+        # Check if model file exists - use lowercase attribute
+        if not os.path.exists(settings.model_path):
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Model file not found at {settings.MODEL_PATH}"
+                detail=f"Model file not found at {settings.model_path}"
             )
         
         try:
             detector_instance = BikeDetector(
-                model_path=settings.MODEL_PATH,
-                confidence_threshold=settings.CONFIDENCE_THRESHOLD,
-                iou_threshold=settings.IOU_THRESHOLD
+                model_path=settings.model_path,                    
+                confidence_threshold=settings.confidence_threshold, 
+                iou_threshold=settings.iou_threshold               
             )
         except Exception as e:
             raise HTTPException(
@@ -53,7 +53,6 @@ def get_detector() -> BikeDetector:
             )
     
     return detector_instance
-
 def validate_file_exists(file_path: str) -> str:
     """Validate that file exists."""
     if not os.path.exists(file_path):
