@@ -13,6 +13,12 @@ ENV/
 .venv/
 pip-log.txt
 
+bikes_venv/
+__pycache__/
+*.pyc
+node_modules/
+.env
+
 # === Jupyter and IPython ===
 .ipynb_checkpoints/
 *.ipynb
