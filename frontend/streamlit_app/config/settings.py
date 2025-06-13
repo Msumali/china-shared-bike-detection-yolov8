@@ -4,7 +4,7 @@ from typing import List
 # Backend API Configuration
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 API_BASE_URL = BACKEND_URL  # For compatibility with api_client.py
-API_TIMEOUT = int(os.getenv("API_TIMEOUT", "30"))
+API_TIMEOUT = int(os.getenv("API_TIMEOUT", "3000"))
 
 # Streamlit Configuration
 PAGE_TITLE = "Bike Detection System"

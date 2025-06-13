@@ -191,7 +191,7 @@ def test_backend_connection(backend_url: str) -> bool:
         
         print(f"🔍 Testing backend connection to {backend_url}...")
         
-        response = requests.get(f"{backend_url}/health", timeout=5)
+        response = requests.get(f"{backend_url}/health", timeout=10)
         
         if response.status_code == 200:
             print("✅ Backend is accessible")

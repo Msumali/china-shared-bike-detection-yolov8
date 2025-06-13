@@ -47,6 +47,7 @@ def render_realtime_detection_component():
         )
     
     with col2:
+        frame_number = frame_number or 0  # Add this line before the timestamp calculation
         timestamp = frame_number / video_info['fps'] if video_info['fps'] > 0 else 0
         st.metric("Timestamp", f"{timestamp:.2f}s")
     
